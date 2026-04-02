@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Local data and outputs
+data/raw/*
+data/processed/*
+data/generated/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/generated/.gitkeep
+
+results/*
+!results/.gitkeep
+
+figures/generated/*
+!figures/generated/.gitkeep
+
+# Large artifacts
+*.pt
+*.pth
+*.ckpt
+*.npy
+*.npz
+*.csv
+*.pkl
+*.pickle
+*.mat
+*.h5
+*.hdf5
+*.png
+*.pdf
+*.svg
+
+# Allow documentation assets if needed later
+!docs/**/*.png
+!docs/**/*.pdf
