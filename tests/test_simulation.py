@@ -14,7 +14,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from isml.simulation import (  # noqa: E402
+from simulation import (  # noqa: E402
     BeamPropagationSimulation,
     estimate_correlation_length_2d,
     generate_lg_beam_analytic,

@@ -10,8 +10,7 @@ IS-ML-classifier-code/
 ├── data/           # local datasets and generated samples, excluded from git
 ├── figures/        # exported figures for papers or reports
 ├── src/
-│   └── isml/
-│       └── simulation/
+│   └── simulation/
 └── tests/          # lightweight regression tests
 ```
 
@@ -26,5 +25,5 @@ interfaces are cleaned and stabilized.
 - `beam_propagation.py`
 - `simulation.py`
 
-These components have been consolidated into `src/isml/simulation/`, with
+These components have been consolidated into `src/simulation/`, with
 lightweight tests in `tests/test_simulation.py`.
