@@ -24,7 +24,7 @@ interfaces are cleaned and stabilized.
 
 - `beam_creation.py`
 - `beam_propagation.py`
-- `SimulationClass.py`
+- `simulation.py`
 
 These components have been consolidated into `src/isml/simulation/`, with
 lightweight tests in `tests/test_simulation.py`.
