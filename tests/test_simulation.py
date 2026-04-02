@@ -10,11 +10,10 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from simulation import (  # noqa: E402
+from simulation_utils import (  # noqa: E402
     BeamPropagationSimulation,
     estimate_correlation_length_2d,
     generate_lg_beam_analytic,
