@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -25,6 +26,13 @@ from .datasets import (
 )
 from .models import MODEL_REGISTRY
 from .training import ClassificationTrainer, collect_predictions, count_parameters, set_seed
+
+
+def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
+    """Extract one parameter value from a dataset directory name."""
+
+    match = re.search(rf"{re.escape(key)}-([^_]+)", dataset_name)
+    return match.group(1) if match is not None else "unknown"
 
 
 @dataclass
@@ -60,11 +68,20 @@ class ClassificationConfig:
 
     @property
     def results_dir(self) -> Path:
-        input_tag = "ACF" if self.use_acf else "Intensity"
-        aug_tag = "augmented" if self.generated_data_root is not None and self.max_gen_samples_per_class > 0 else "baseline"
+        dataset_name = self.real_data_root.name
+        z_value = _extract_dataset_parameter(dataset_name, "z")
+        sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+        input_tag = "acf" if self.use_acf else "intensity"
         dirname = (
-            f"classification_{aug_tag}_{input_tag}_pad-{self.padding_mode}_"
-            f"shift-{self.shift_amount}-{self.shift_mode}_crop-{self.final_size[0]}_seed-{self.random_seed}"
+            "classification_"
+            f"z-{z_value}_"
+            f"sigma-{sigma_value}_"
+            f"crop-{self.final_size[0]}x{self.final_size[1]}_"
+            f"input-{input_tag}_"
+            f"pad-{self.padding_mode}_"
+            f"shift-{self.shift_amount}-{self.shift_mode}_"
+            f"eval-{self.eval_protocol}_"
+            f"seed-{self.random_seed}"
         )
         return self.repo_root / "data" / "processed" / dirname
 

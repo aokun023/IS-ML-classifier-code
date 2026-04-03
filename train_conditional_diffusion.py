@@ -15,8 +15,15 @@ from accelerate import Accelerator
 from generation_utils import PipelineConfig, run_generation_pipeline, set_seed
 
 
+def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path) -> Path:
+    """Resolve a repository-relative path from the configuration block."""
+
+    path = Path(path_like)
+    return path if path.is_absolute() else repo_root / path
+
+
 CONFIG = {
-    "dataset_root": REPO_ROOT / "data" / "raw" / "dataset_z-5.00_sigma-5e-05_l0-1.5_Nx-2048_medium",
+    "dataset_root": "data/raw/dataset_z-5.00_sigma-5e-05",
     "metadata_filename": "metadata_256.csv",
     "dataset_tag": None,
     "input_resolution_tag": "256",
@@ -71,7 +78,7 @@ CONFIG = {
 def build_config() -> PipelineConfig:
     return PipelineConfig(
         repo_root=REPO_ROOT,
-        dataset_path=Path(CONFIG["dataset_root"]),
+        dataset_path=_resolve_repo_relative_path(REPO_ROOT, CONFIG["dataset_root"]),
         metadata_filename=str(CONFIG["metadata_filename"]),
         dataset_tag=CONFIG["dataset_tag"],
         input_resolution_tag=str(CONFIG["input_resolution_tag"]),

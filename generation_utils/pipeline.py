@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gc
 import json
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,13 @@ from tqdm.auto import tqdm
 from .datasets import SpeckleAugmentedDataset, calculate_intensity_range
 from .diffusion import build_noise_scheduler, build_unet, get_diffusion_variables, load_compiled_state_dict
 from .losses import BregmanCharbonnierLoss, FrequencyBregmanPureL1Loss, LinearMinMaxNormalize
+
+
+def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
+    """Extract one parameter value from a dataset directory name."""
+
+    match = re.search(rf"{re.escape(key)}-([^_]+)", dataset_name)
+    return match.group(1) if match is not None else "unknown"
 
 
 @dataclass
@@ -77,12 +85,20 @@ class PipelineConfig:
 
     @property
     def output_root(self) -> Path:
+        dataset_name = self.dataset_path.name
+        z_value = _extract_dataset_parameter(dataset_name, "z")
+        sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
         base = Path(
-            f"pipeline_output_model_type-{self.model_type}_pixel_loss-{self.pixel_loss_type}_"
-            f"conditioned_prediction-{self.prediction_type}_loss-{self.loss_target_type}_"
-            f"lambda_freq-{self.lambda_freq}"
+            "generation_"
+            f"z-{z_value}_"
+            f"sigma-{sigma_value}_"
+            f"pred-{self.prediction_type}_"
+            f"loss-{self.loss_target_type}_"
+            f"lambda-{self.lambda_freq}_"
+            f"res-{self.image_size}_"
+            f"seed-{self.random_seed}"
         )
-        return self.repo_root / "results" / base / f"data-{self.dataset_name_tag}"
+        return self.repo_root / "results" / base
 
 
 def pretrain_generator(config: PipelineConfig, accelerator: Accelerator) -> Path:

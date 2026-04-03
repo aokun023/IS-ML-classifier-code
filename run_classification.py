@@ -14,8 +14,17 @@ if str(REPO_ROOT) not in sys.path:
 from classification_utils import ClassificationConfig, run_classification_experiment
 
 
+def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path | None) -> Path | None:
+    """Resolve a repository-relative path from the configuration block."""
+
+    if path_like is None:
+        return None
+    path = Path(path_like)
+    return path if path.is_absolute() else repo_root / path
+
+
 CONFIG = {
-    "real_data_root": REPO_ROOT / "data" / "raw" / "dataset_z-5.00_sigma-5e-05_l0-1.5_Nx-2048_medium",
+    "real_data_root": "data/raw/dataset_z-5.00_sigma-5e-05",
     "real_metadata_filename": "metadata_256.csv",
     "final_size": (64, 64),
     "canvas_size": (256, 256),
@@ -32,7 +41,7 @@ CONFIG = {
     "save_confusion_matrices": False,
     "model_names": ("SimpleCNN", "ResNet18"),
     "learning_rates": {"SimpleCNN": 6.8e-4, "ResNet18": 6.8e-4},
-    "generated_data_root": None,
+    "generated_data_root": "results/generation_z-5.00_sigma-5e-05_pred-v_prediction_loss-sample_lambda-1.0_res-256_seed-42",
     "generated_stage_folder": "stage5_pretrained_data",
 }
 
@@ -40,7 +49,7 @@ CONFIG = {
 def main() -> None:
     config = ClassificationConfig(
         repo_root=REPO_ROOT,
-        real_data_root=Path(CONFIG["real_data_root"]),
+        real_data_root=_resolve_repo_relative_path(REPO_ROOT, CONFIG["real_data_root"]),
         real_metadata_filename=str(CONFIG["real_metadata_filename"]),
         final_size=tuple(CONFIG["final_size"]),
         canvas_size=tuple(CONFIG["canvas_size"]),
@@ -57,7 +66,7 @@ def main() -> None:
         save_confusion_matrices=bool(CONFIG["save_confusion_matrices"]),
         model_names=tuple(CONFIG["model_names"]),
         learning_rates=dict(CONFIG["learning_rates"]),
-        generated_data_root=None if CONFIG["generated_data_root"] is None else Path(CONFIG["generated_data_root"]),
+        generated_data_root=_resolve_repo_relative_path(REPO_ROOT, CONFIG["generated_data_root"]),
         generated_stage_folder=str(CONFIG["generated_stage_folder"]),
     )
     results = run_classification_experiment(config)
