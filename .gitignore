@@ -47,5 +47,7 @@ figures/generated/*
 *.svg
 
 # Allow documentation assets if needed later
+!figures/README/
+!figures/README/*.png
 !docs/**/*.png
 !docs/**/*.pdf

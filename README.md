@@ -70,11 +70,6 @@ conda env create -f environment.yml
 conda activate isml
 ```
 
-Core dependencies by module:
-- simulation: `numpy`, `scipy`, `tqdm`
-- classification: `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`
-- generation: `numpy`, `pandas`, `torch`, `diffusers`, `accelerate`, `ema-pytorch`
-
 You can run the lightweight regression tests from the repository root:
 
 ```bash
