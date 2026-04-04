@@ -31,15 +31,15 @@ The default setting in the repository matches the main setting used in the paper
 
 The first figure shows the simulated codebook used in the classification task. The left panel contains the `15` source patterns, and the right panel contains the corresponding propagated intensity patterns under the default random-medium setting.
 
-![Dataset overview](assets/readme/dataset_overview.png)
+![Dataset overview](fig/dataset_overview.png)
 
 The next figure compares simulated propagated samples with the outputs of the best conditional diffusion configuration used in the paper (`v`-prediction, sample-space loss, frequency-loss weight `lambda = 1`). The generated codebook reproduces the coarse class structure and the principal speckle statistics of the simulated data.
 
-![Generated comparison](assets/readme/generated_comparison.png)
+![Generated comparison](fig/generated_comparison.png)
 
 The final figure shows the normalized confusion matrix for the best generative-augmentation result reported in the paper: `ResNet18` with generated samples from the `v/x` setting. Most of the mass remains concentrated on the diagonal, with residual confusion limited to a small number of nearby classes.
 
-![Confusion matrix](assets/readme/confusion_matrix_gen_vx_resnet.png)
+![Confusion matrix](fig/confusion_matrix_gen_vx_resnet.png)
 
 ## Repository Structure
 
@@ -47,7 +47,7 @@ The final figure shows the normalized confusion matrix for the best generative-a
 IS-ML-classifier-code/
 ├── classification_utils/
 ├── data/
-├── assets/
+├── fig/
 ├── generation_utils/
 ├── run_classification.py
 ├── run_simulation.py
@@ -82,7 +82,7 @@ The repository uses the following directory convention:
 - `data/raw/` stores simulated datasets
 - `data/processed/` stores classification outputs
 - `results/` stores diffusion checkpoints and generated samples
-- `assets/` stores lightweight visual assets used in the repository documentation
+- `fig/` stores lightweight figures used in the repository documentation
 
 Under the default configuration:
 - `run_simulation.py` writes a dataset to `data/raw/dataset_z-5.00_sigma-5e-05/`

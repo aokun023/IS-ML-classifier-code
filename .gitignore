@@ -43,9 +43,8 @@ results/*
 *.pdf
 *.svg
 
-# Allow lightweight documentation assets
-!assets/
-!assets/readme/
-!assets/readme/*.png
+# Allow lightweight README figures
+!fig/
+!fig/*.png
 !docs/**/*.png
 !docs/**/*.pdf
