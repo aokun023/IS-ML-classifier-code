@@ -27,9 +27,6 @@ data/generated/*
 results/*
 !results/.gitkeep
 
-figures/generated/*
-!figures/generated/.gitkeep
-
 # Large artifacts
 *.pt
 *.pth
@@ -46,8 +43,9 @@ figures/generated/*
 *.pdf
 *.svg
 
-# Allow documentation assets if needed later
-!figures/README/
-!figures/README/*.png
+# Allow lightweight documentation assets
+!assets/
+!assets/readme/
+!assets/readme/*.png
 !docs/**/*.png
 !docs/**/*.pdf
