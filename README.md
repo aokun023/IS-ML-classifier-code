@@ -39,7 +39,7 @@ The next figure compares simulated propagated samples with the outputs of the be
 
 The following spectrum comparison isolates the effect of the spectral Bregman term in the generative loss. The model trained with `lambda = 1` more closely matches the radial power spectrum of the simulated data than the corresponding model with `lambda = 0`.
 
-![Bregman spectrum comparison](fig/breg_vs_nobreg_spectrum_zoom.png)
+![Bregman spectrum comparison](fig/breg_vs_nobreg_spectrum_panel.png)
 
 The final figure shows the normalized confusion matrix for the best generative-augmentation result reported in the paper: `ResNet18` with generated samples from the `v/x` setting. Most of the mass remains concentrated on the diagonal, with residual confusion limited to a small number of nearby classes.
 
