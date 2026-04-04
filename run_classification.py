@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the default IS-ML classification experiment."""
+"""Run a paper-level IS-ML classification preset."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path | None) -
     return path if path.is_absolute() else repo_root / path
 
 
-CONFIG = {
+BASE_CONFIG = {
     "real_data_root": "data/raw/dataset_z-5.00_sigma-5e-05",
     "real_metadata_filename": "metadata_256.csv",
     "final_size": (64, 64),
@@ -46,30 +46,72 @@ CONFIG = {
 }
 
 
+PRESETS = {
+    "baseline_intensity": {
+        "use_acf": False,
+        "max_gen_samples_per_class": 0,
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "baseline_acf": {
+        "use_acf": True,
+        "max_gen_samples_per_class": 0,
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "gen_aug_resnet": {
+        "use_acf": False,
+        "max_gen_samples_per_class": 50,
+        "model_names": ("ResNet18",),
+        "save_confusion_matrices": True,
+    },
+}
+
+
+PRESET_NAME = "baseline_intensity"
+
+
+OVERRIDES = {
+    # Example:
+    # "random_seed": 100,
+    # "real_data_root": "data/raw/dataset_z-5.00_sigma-1e-04",
+}
+
+
+def build_config() -> dict:
+    if PRESET_NAME not in PRESETS:
+        valid = ", ".join(sorted(PRESETS))
+        raise ValueError(f"Unknown PRESET_NAME '{PRESET_NAME}'. Valid options: {valid}.")
+    config = dict(BASE_CONFIG)
+    config.update(PRESETS[PRESET_NAME])
+    config.update(OVERRIDES)
+    return config
+
+
 def main() -> None:
+    config_dict = build_config()
     config = ClassificationConfig(
         repo_root=REPO_ROOT,
-        real_data_root=_resolve_repo_relative_path(REPO_ROOT, CONFIG["real_data_root"]),
-        real_metadata_filename=str(CONFIG["real_metadata_filename"]),
-        final_size=tuple(CONFIG["final_size"]),
-        canvas_size=tuple(CONFIG["canvas_size"]),
-        max_real_samples_per_class=int(CONFIG["max_real_samples_per_class"]),
-        max_gen_samples_per_class=int(CONFIG["max_gen_samples_per_class"]),
-        use_acf=bool(CONFIG["use_acf"]),
-        padding_mode=str(CONFIG["padding_mode"]),
-        shift_amount=int(CONFIG["shift_amount"]),
-        shift_mode=str(CONFIG["shift_mode"]),
-        eval_protocol=str(CONFIG["eval_protocol"]),
-        batch_size=int(CONFIG["batch_size"]),
-        num_epochs=int(CONFIG["num_epochs"]),
-        random_seed=int(CONFIG["random_seed"]),
-        save_confusion_matrices=bool(CONFIG["save_confusion_matrices"]),
-        model_names=tuple(CONFIG["model_names"]),
-        learning_rates=dict(CONFIG["learning_rates"]),
-        generated_data_root=_resolve_repo_relative_path(REPO_ROOT, CONFIG["generated_data_root"]),
-        generated_stage_folder=str(CONFIG["generated_stage_folder"]),
+        real_data_root=_resolve_repo_relative_path(REPO_ROOT, config_dict["real_data_root"]),
+        real_metadata_filename=str(config_dict["real_metadata_filename"]),
+        final_size=tuple(config_dict["final_size"]),
+        canvas_size=tuple(config_dict["canvas_size"]),
+        max_real_samples_per_class=int(config_dict["max_real_samples_per_class"]),
+        max_gen_samples_per_class=int(config_dict["max_gen_samples_per_class"]),
+        use_acf=bool(config_dict["use_acf"]),
+        padding_mode=str(config_dict["padding_mode"]),
+        shift_amount=int(config_dict["shift_amount"]),
+        shift_mode=str(config_dict["shift_mode"]),
+        eval_protocol=str(config_dict["eval_protocol"]),
+        batch_size=int(config_dict["batch_size"]),
+        num_epochs=int(config_dict["num_epochs"]),
+        random_seed=int(config_dict["random_seed"]),
+        save_confusion_matrices=bool(config_dict["save_confusion_matrices"]),
+        model_names=tuple(config_dict["model_names"]),
+        learning_rates=dict(config_dict["learning_rates"]),
+        generated_data_root=_resolve_repo_relative_path(REPO_ROOT, config_dict["generated_data_root"]),
+        generated_stage_folder=str(config_dict["generated_stage_folder"]),
     )
     results = run_classification_experiment(config)
+    print(f"Preset: {PRESET_NAME}")
     print(results)
 
 

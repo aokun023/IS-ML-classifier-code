@@ -167,12 +167,10 @@ Outputs:
 
 ### 3. Run the baseline classification experiment
 
-`run_classification.py` runs the default baseline classification setting:
-- centered test protocol
-- crop size `64 x 64`
-- zero padding
-- no generated-data augmentation
-- `SimpleCNN` and `ResNet18`
+`run_classification.py` is organized around a small set of paper-level presets. The current presets are:
+- `baseline_intensity`: the main baseline with cropped intensity input
+- `baseline_acf`: the controlled comparison using ACF input
+- `gen_aug_resnet`: the best generative-augmentation setting with `ResNet18`
 
 Run:
 
@@ -186,4 +184,6 @@ Outputs:
 - checkpoints
 - optional confusion matrices
 
-All three entry scripts use explicit configuration blocks near the top of the file. To change the physical setting, dataset size, classifier, or generative model, edit the corresponding `CONFIG` dictionary.
+To switch experiments, change `PRESET_NAME` near the top of `run_classification.py`. Small local changes can then be made through the `OVERRIDES` dictionary in the same file.
+
+All three entry scripts use explicit in-script configuration blocks. To change the physical setting, dataset size, classifier, or generative model, edit the corresponding preset or configuration block.
