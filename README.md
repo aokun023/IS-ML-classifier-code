@@ -55,7 +55,6 @@ IS-ML-classifier-code/
 ├── run_classification.py
 ├── run_simulation.py
 ├── simulation_utils/
-├── tests/
 └── train_conditional_diffusion.py
 ```
 
@@ -71,12 +70,6 @@ An environment file is provided at the repository root:
 ```bash
 conda env create -f environment.yml
 conda activate isml
-```
-
-You can run the lightweight regression tests from the repository root:
-
-```bash
-python -m unittest tests/test_simulation.py tests/test_classification.py
 ```
 
 ## Data Layout
