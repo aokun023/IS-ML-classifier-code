@@ -20,9 +20,6 @@ Thumbs.db
 data/raw/*
 data/processed/*
 data/generated/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/generated/.gitkeep
 
 results/*
 !results/.gitkeep

@@ -46,7 +46,6 @@ The final figure shows the normalized confusion matrix for the best generative-a
 ```text
 IS-ML-classifier-code/
 ├── classification_utils/
-├── data/
 ├── fig/
 ├── generation_utils/
 ├── run_classification.py
@@ -78,7 +77,7 @@ python -m unittest tests/test_simulation.py tests/test_classification.py
 
 ## Data Layout
 
-The repository uses the following directory convention:
+The main scripts create their output directories automatically. When the pipeline is run, the repository uses the following directory convention:
 - `data/raw/` stores simulated datasets
 - `data/processed/` stores classification outputs
 - `results/` stores diffusion checkpoints and generated samples
