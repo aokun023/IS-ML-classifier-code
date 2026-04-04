@@ -10,7 +10,7 @@ from .beam_propagation import (
     pwe_solver_splitting_ito_3d_efficient,
     radial_average,
 )
-from .simulation import BeamPropagationSimulation
+from .simulation_class import BeamPropagationSimulation
 
 __all__ = [
     "BeamPropagationSimulation",

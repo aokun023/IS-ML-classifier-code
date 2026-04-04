@@ -93,7 +93,7 @@ default.
 
 - `beam_creation.py`
 - `beam_propagation.py`
-- `simulation.py`
+- `simulation_class.py`
 
 These components have been consolidated into `simulation_utils/`, with
 lightweight tests in `tests/test_simulation.py`.
