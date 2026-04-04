@@ -77,10 +77,10 @@ python -m unittest tests/test_simulation.py tests/test_classification.py
 
 ## Data Layout
 
-The main scripts create their output directories automatically. When the pipeline is run, the repository uses the following directory convention:
+The main scripts create their output directories automatically. When the pipeline is run, the following directory convention is used:
 - `data/raw/` stores simulated datasets
 - `data/processed/` stores classification outputs
-- `results/` stores diffusion checkpoints and generated samples
+- `results/` stores diffusion checkpoints and generated samples created during training
 - `fig/` stores lightweight figures used in the repository documentation
 
 Under the default configuration:
@@ -88,7 +88,7 @@ Under the default configuration:
 - `train_conditional_diffusion.py` reads from `data/raw/` and writes to `results/generation_.../`
 - `run_classification.py` reads from `data/raw/` and writes to `data/processed/classification_.../`
 
-Large datasets, generated samples, and checkpoints are excluded from git by default.
+These runtime outputs are not part of the repository contents and are excluded from git by default.
 
 ## Modules
 
