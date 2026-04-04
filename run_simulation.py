@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import torch
 from tqdm.auto import tqdm
 
 
@@ -29,11 +28,22 @@ def _dataset_dirname(z_value: float, sigma_value: float) -> str:
 
 
 def _downsample_to_256(image: np.ndarray) -> np.ndarray:
-    tensor = torch.from_numpy(image.astype(np.float32)).unsqueeze(0).unsqueeze(0)
-    kernel_size = tensor.shape[-1] // 256
-    if kernel_size > 1:
-        tensor = torch.nn.AvgPool2d(kernel_size=kernel_size, stride=kernel_size)(tensor)
-    return tensor.squeeze().numpy()
+    image = image.astype(np.float32, copy=False)
+    height, width = image.shape
+    target_size = 256
+
+    if height == target_size and width == target_size:
+        return image.copy()
+
+    if height % target_size != 0 or width % target_size != 0:
+        raise ValueError(
+            "The image size must be divisible by 256 for average-pooling downsampling."
+        )
+
+    kernel_h = height // target_size
+    kernel_w = width // target_size
+    reshaped = image.reshape(target_size, kernel_h, target_size, kernel_w)
+    return reshaped.mean(axis=(1, 3), dtype=np.float32)
 
 
 CONFIG = {

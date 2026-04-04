@@ -1,37 +1,67 @@
 # IS-ML-classifier-code
 
-Codebase for the IS-ML project on stochastic beam propagation, convolutional
-classification, and diffusion-based generative augmentation.
+Code for the IS-ML project on stochastic beam propagation, image-based OAM classification, and diffusion-based generative augmentation.
 
-## Repository structure
+This repository is organized around the three main components studied in the paper:
+- `simulation_utils/`: stochastic beam propagation and dataset generation
+- `classification_utils/`: cropped-intensity and ACF-based classification
+- `generation_utils/`: conditional diffusion training and class-conditional sample generation
+
+The three public entry points are:
+- `run_simulation.py`
+- `train_conditional_diffusion.py`
+- `run_classification.py`
+
+## Overview
+
+The paper studies classification of structured optical fields after propagation through a random medium. The public code follows the same order as the numerical pipeline in the manuscript:
+
+1. generate propagated datasets by stochastic simulation;
+2. train a conditional diffusion model on propagated samples;
+3. evaluate classification with or without generated-data augmentation.
+
+The default setting in the repository matches the main setting used in the paper:
+- propagation distance `z = 5`
+- medium-strength parameter `sigma = 5e-5`
+- grid size `Nx = 2048`
+- downsampled learning resolution `256 x 256`
+- centered test protocol with crop size `64 x 64`
+
+## Representative Results
+
+The first figure shows the simulated codebook used in the classification task. The left panel contains the `15` source patterns, and the right panel contains the corresponding propagated intensity patterns under the default random-medium setting.
+
+![Dataset overview](figures/README/dataset_overview.png)
+
+The next figure compares simulated propagated samples with the outputs of the best conditional diffusion configuration used in the paper (`v`-prediction, sample-space loss, frequency-loss weight `lambda = 1`). The generated codebook reproduces the coarse class structure and the principal speckle statistics of the simulated data.
+
+![Generated comparison](figures/README/generated_comparison.png)
+
+The final figure shows the normalized confusion matrix for the best generative-augmentation result reported in the paper: `ResNet18` with generated samples from the `v/x` setting. Most of the mass remains concentrated on the diagonal, with residual confusion limited to a small number of nearby classes.
+
+![Confusion matrix](figures/README/confusion_matrix_gen_vx_resnet.png)
+
+## Repository Structure
 
 ```text
 IS-ML-classifier-code/
 ├── classification_utils/
-├── data/           # local datasets and generated samples, excluded from git
-├── figures/        # exported figures for papers or reports
+├── data/
+├── figures/
 ├── generation_utils/
-├── run_classification.py          # main classification entry point
+├── run_classification.py
+├── run_simulation.py
 ├── simulation_utils/
-├── train_conditional_diffusion.py  # main generation entry point
-├── run_simulation.py               # main simulation entry point
-└── tests/          # lightweight regression tests
+├── tests/
+└── train_conditional_diffusion.py
 ```
 
-The repository is intentionally kept flat. The reusable modules are exposed
-directly at the repository root through `generation_utils/` and
-`simulation_utils/`, and the main executable scripts are placed alongside them.
-At present the repository includes the core simulation module, the main
-classification pipeline, the first public generation pipeline, and lightweight
-regression tests.
+The repository is intentionally kept flat. The reusable modules are exposed directly at the repository root, and the main executable scripts are placed alongside them.
 
-## Environment and installation
-
-The repository was organized for Python-based numerical experiments. A clean
-virtual environment or conda environment is recommended.
+## Environment
 
 Recommended Python version:
-- Python `3.10` or `3.11`
+- `3.10` or `3.11`
 
 An environment file is provided at the repository root:
 
@@ -41,100 +71,75 @@ conda activate isml
 ```
 
 Core dependencies by module:
-- simulation: `numpy`, `scipy`
-- classification: `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`, `tqdm`
-- generation: `numpy`, `pandas`, `torch`, `diffusers`, `accelerate`, `ema-pytorch`, `scikit-learn`, `tqdm`
+- simulation: `numpy`, `scipy`, `tqdm`
+- classification: `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`
+- generation: `numpy`, `pandas`, `torch`, `diffusers`, `accelerate`, `ema-pytorch`
 
-One possible setup is:
-
-```bash
-conda create -n isml python=3.10
-conda activate isml
-pip install numpy scipy pandas matplotlib scikit-learn tqdm
-pip install torch
-pip install diffusers accelerate ema-pytorch
-```
-
-If you only want to run the simulation code, `torch`, `diffusers`,
-`accelerate`, and `ema-pytorch` are not needed.
-
-After installation, you can run the lightweight regression tests from the
-repository root:
+You can run the lightweight regression tests from the repository root:
 
 ```bash
 python -m unittest tests/test_simulation.py tests/test_classification.py
 ```
 
-The classification tests are skipped automatically when `torch` is not
-available.
+## Data Layout
 
-## Data layout
-
-The repository uses the following directory convention under `data/`:
-
-- `data/raw/` stores input datasets, for example
-  `dataset_z-5.00_sigma-5e-05/`
-- `data/processed/` stores outputs created by the public entry scripts,
-  including simulation summaries, classification results, checkpoints, and
-  confusion matrices
+The repository uses the following directory convention:
+- `data/raw/` stores simulated datasets
+- `data/processed/` stores classification outputs
+- `results/` stores diffusion checkpoints and generated samples
+- `figures/` stores manuscript figures and exported visual summaries
 
 Under the default configuration:
-- `run_simulation.py` writes one generated dataset to
-  `data/raw/dataset_z-5.00_sigma-5e-05/`
-- `run_classification.py` reads from `data/raw/` and writes experiment outputs
-  under `data/processed/classification_.../`
-- `train_conditional_diffusion.py` reads from `data/raw/` and writes generative
-  outputs under `results/generation_.../`
+- `run_simulation.py` writes a dataset to `data/raw/dataset_z-5.00_sigma-5e-05/`
+- `train_conditional_diffusion.py` reads from `data/raw/` and writes to `results/generation_.../`
+- `run_classification.py` reads from `data/raw/` and writes to `data/processed/classification_.../`
 
-Large datasets, generated samples, and checkpoints are excluded from git by
-default.
+Large datasets, generated samples, and checkpoints are excluded from git by default.
 
-## Current simulation module
+## Modules
 
-- `beam_creation.py`
-- `beam_propagation.py`
-- `simulation_class.py`
+### Simulation
 
-These components have been consolidated into `simulation_utils/`, with
-lightweight tests in `tests/test_simulation.py`.
+The simulation module is built around:
+- `simulation_utils/beam_creation.py`
+- `simulation_utils/beam_propagation.py`
+- `simulation_utils/simulation_class.py`
 
-## Current generation module
+It generates class-conditional propagated intensity fields and exports both `2048 x 2048` and `256 x 256` arrays together with metadata tables.
 
+### Generation
+
+The generation module is built around:
 - `generation_utils/datasets.py`
 - `generation_utils/losses.py`
 - `generation_utils/diffusion.py`
 - `generation_utils/pipeline.py`
-- `train_conditional_diffusion.py`
 
-The generation pipeline currently covers the conditional diffusion training
-step and the export of class-conditional synthetic samples used for data
-augmentation.
+It covers conditional diffusion training and export of class-conditional synthetic samples for augmentation.
 
-## Current classification module
+### Classification
 
+The classification module is built around:
 - `classification_utils/models.py`
 - `classification_utils/datasets.py`
 - `classification_utils/training.py`
 - `classification_utils/experiment.py`
-- `run_classification.py`
 
-The classification pipeline covers the main intensity-versus-ACF preprocessing,
-the controlled crop-and-shift protocol, optional generated-data augmentation,
-and the SimpleCNN / ResNet18 training loop used in the paper.
+It covers cropped-intensity and ACF inputs, the controlled crop-and-shift protocol, and the `SimpleCNN` / `ResNet18` classifiers used in the paper.
 
 ## Usage
 
-### 1. Run one default simulation
+### 1. Generate a default dataset
 
-The script `run_simulation.py` generates one default propagated-intensity dataset for the paper setting:
-- 15 nonzero binary classes built from the default mode dictionary
+`run_simulation.py` generates the default propagated-intensity dataset:
+- `15` nonzero binary classes from the default mode dictionary
 - `150` samples per class
-- `L_x = 64`
-- `N_x = 2048`
+- `Lx = 64`
+- `Nx = 2048`
 - `z = 5`
-- `\Delta z = 1/32`
-- `\sigma = 5\times 10^{-5}`
-- `l_0 = 1.5`
+- `dz = 1/32`
+- `sigma = 5e-5`
+- `l0 = 1.5`
 
 Run:
 
@@ -142,23 +147,38 @@ Run:
 python run_simulation.py
 ```
 
-Default outputs are written to:
+Outputs:
 - `data/raw/dataset_z-5.00_sigma-5e-05/inputs_2048/*.npy`
 - `data/raw/dataset_z-5.00_sigma-5e-05/inputs_256/*.npy`
 - `data/raw/dataset_z-5.00_sigma-5e-05/metadata_2048.csv`
 - `data/raw/dataset_z-5.00_sigma-5e-05/metadata_256.csv`
 - `data/raw/dataset_z-5.00_sigma-5e-05/summary.json`
 
-This dataset can then be used directly by both `train_conditional_diffusion.py`
-and `run_classification.py`. If you want a different propagation setting or a
-different dataset size, edit the `CONFIG` block at the top of the script.
+### 2. Train the conditional diffusion model
 
-### 2. Run the default classification experiment
+`train_conditional_diffusion.py` runs the default generation pipeline:
+- input resolution `256 x 256`
+- `v`-prediction
+- sample-space loss
+- frequency-loss weight `lambda = 1`
+- `50` generated samples per class
 
-The script `run_classification.py` runs the main baseline classification setting used in the paper:
-- default dataset root given by `CONFIG["real_data_root"]`
+Run:
+
+```bash
+python train_conditional_diffusion.py
+```
+
+Outputs:
+- best pretrained checkpoint
+- training summaries
+- generated samples in `results/generation_.../class-*/stage5_pretrained_data/`
+
+### 3. Run the baseline classification experiment
+
+`run_classification.py` runs the default baseline classification setting:
 - centered test protocol
-- crop size `64\times 64`
+- crop size `64 x 64`
 - zero padding
 - no generated-data augmentation
 - `SimpleCNN` and `ResNet18`
@@ -169,40 +189,10 @@ Run:
 python run_classification.py
 ```
 
-Default outputs are written under `data/processed/`, in a directory named by the experiment configuration, and include:
-- `summary.csv`
-- `history_SimpleCNN.json`
-- `history_ResNet18.json`
-- model checkpoints in `checkpoints/`
+Outputs:
+- `data/processed/classification_.../summary.csv`
+- training histories
+- checkpoints
+- optional confusion matrices
 
-If you want to switch to a different dataset, ACF inputs, generated-data
-augmentation, or a different crop-and-shift setting, edit the `CONFIG` block at
-the top of the script. The saved classification directory keeps a short naming
-scheme and records only the dataset parameters `z` and `sigma` from the dataset
-name, together with the main preprocessing and shift settings.
-Both `real_data_root` and `generated_data_root` are interpreted relative to the
-repository root by default, for example `data/raw/<dataset_name>` or
-`results/<generation_run_name>`.
-
-### 3. Run conditional diffusion training and sample generation
-
-The script `train_conditional_diffusion.py` runs the default conditional diffusion pipeline used for generative augmentation:
-- default dataset root given by `CONFIG["dataset_root"]`
-- `256\times 256` inputs
-- `\mathbf{v}` prediction
-- sample-space loss
-- frequency-loss weight `\lambda = 1`
-- `50` generated samples per class
-
-Run:
-
-```bash
-python train_conditional_diffusion.py
-```
-
-Default outputs are written under `results/generation_.../`, including:
-- the best pretrained checkpoint
-- training summaries
-- class-conditional generated samples in `class-*/stage5_pretrained_data/`
-
-This script requires PyTorch, `diffusers`, `accelerate`, and `ema-pytorch`. To change the generative setting, edit the `CONFIG` block at the top of the script.
+All three entry scripts use explicit configuration blocks near the top of the file. To change the physical setting, dataset size, classifier, or generative model, edit the corresponding `CONFIG` dictionary.
