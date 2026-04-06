@@ -12,7 +12,7 @@ def ift2_centered(array: np.ndarray, dkx: float, dky: float, axes: tuple[int, in
     shifted = np.fft.ifftshift(array, axes=axes)
     transformed = np.fft.ifft2(shifted, axes=axes)
     centered = np.fft.fftshift(transformed, axes=axes)
-    return centered * (dkx * dky * nx * ny)
+    return centered * (dkx * dky * nx * ny) / (4.0 * np.pi**2)
 
 
 def power_spectrum_ito_3d(kx: np.ndarray, ky: np.ndarray, xi: np.ndarray | float, l0: float = 1.0) -> np.ndarray:
@@ -144,7 +144,7 @@ def pwe_solver_splitting_ito_3d_efficient(
 
     propagator = np.exp(-1j * dz * (kx_grid**2 + ky_grid**2))
     propagator_fft = np.fft.fftshift(propagator)
-    power_spectrum_density = sigma * power_spectrum_ito_3d(kx_grid, ky_grid, 0.0, l0=l0)
+    power_spectrum_density = sigma**2 * power_spectrum_ito_3d(kx_grid, ky_grid, 0.0, l0=l0)/ 16.0
 
     field = np.zeros((nx, nx, nz), dtype=np.complex128)
     field[:, :, 0] = phi
