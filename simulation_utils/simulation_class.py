@@ -120,7 +120,9 @@ class BeamPropagationSimulation:
         dz = float(self.params["dz"])
         dkx = 2.0 * np.pi / float(self.params["Lx"])
 
-        power_spectrum_density = sigma * power_spectrum_ito_3d(self.kx, self.ky, 0.0, l0=l0)
+        power_spectrum_density = (
+            sigma**2 * power_spectrum_ito_3d(self.kx, self.ky, 0.0, l0=l0) / 8.0
+        )
         self.nu = np.zeros((nx, nx, nz), dtype=np.float64)
         for idx in range(nz):
             self.nu[:, :, idx] = generate_random_medium_slice(power_spectrum_density, dz, dkx, dkx)
