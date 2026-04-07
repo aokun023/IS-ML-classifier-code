@@ -144,7 +144,7 @@ def pwe_solver_splitting_ito_3d_efficient(
 
     propagator = np.exp(-1j * dz * (kx_grid**2 + ky_grid**2))
     propagator_fft = np.fft.fftshift(propagator)
-    power_spectrum_density = sigma**2 * power_spectrum_ito_3d(kx_grid, ky_grid, 0.0, l0=l0)/ 16.0
+    power_spectrum_density = sigma**2 * power_spectrum_ito_3d(kx_grid, ky_grid, 0.0, l0=l0)/ 8.0
 
     field = np.zeros((nx, nx, nz), dtype=np.complex128)
     field[:, :, 0] = phi
