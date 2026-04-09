@@ -41,6 +41,10 @@ BASE_CONFIG = {
     "save_confusion_matrices": False,
     "model_names": ("SimpleCNN", "ResNet18"),
     "learning_rates": {"SimpleCNN": 6.8e-4, "ResNet18": 6.8e-4},
+    "use_lr_finder": True,
+    "lr_finder_start_lr": 1e-7,
+    "lr_finder_end_lr": 1e-2,
+    "lr_finder_num_iter": 150,
     "generated_data_root": "results/generation_z-5.00_sigma-5e-05_pred-v_prediction_loss-sample_lambda-1.0_res-256_seed-42",
     "generated_stage_folder": "stage5_pretrained_data",
 }
@@ -107,6 +111,10 @@ def main() -> None:
         save_confusion_matrices=bool(config_dict["save_confusion_matrices"]),
         model_names=tuple(config_dict["model_names"]),
         learning_rates=dict(config_dict["learning_rates"]),
+        use_lr_finder=bool(config_dict["use_lr_finder"]),
+        lr_finder_start_lr=float(config_dict["lr_finder_start_lr"]),
+        lr_finder_end_lr=float(config_dict["lr_finder_end_lr"]),
+        lr_finder_num_iter=int(config_dict["lr_finder_num_iter"]),
         generated_data_root=_resolve_repo_relative_path(REPO_ROOT, config_dict["generated_data_root"]),
         generated_stage_folder=str(config_dict["generated_stage_folder"]),
     )

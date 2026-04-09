@@ -12,6 +12,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
+try:
+    from torch_lr_finder import LRFinder
+except ImportError:  # pragma: no cover - optional dependency
+    LRFinder = None
+
 
 def set_seed(seed: int) -> None:
     """Set random seeds for Python, NumPy, and PyTorch."""
@@ -44,6 +49,44 @@ def collect_predictions(model: nn.Module, loader: DataLoader, device: torch.devi
             y_pred.extend(preds)
             y_true.extend(labels.numpy().tolist())
     return y_true, y_pred
+
+
+def find_optimal_lr(
+    model: nn.Module,
+    train_loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+    start_lr: float = 1e-7,
+    end_lr: float = 1e-2,
+    num_iter: int = 150,
+    weight_decay: float = 1e-5,
+) -> float:
+    """Estimate a learning rate by an LR range test."""
+
+    if LRFinder is None:
+        raise ImportError(
+            "torch_lr_finder is required when use_lr_finder=True. "
+            "Install it with `pip install torch-lr-finder` or disable LR finder."
+        )
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=start_lr, weight_decay=weight_decay)
+    lr_finder = LRFinder(model, optimizer, criterion, device=device)
+    lr_finder.range_test(train_loader, end_lr=end_lr, num_iter=num_iter, step_mode="exp")
+
+    lrs = lr_finder.history["lr"]
+    losses = lr_finder.history["loss"]
+    skip_start = 10
+    skip_end = 5
+    if len(lrs) < skip_start + skip_end:
+        lr_finder.reset()
+        raise RuntimeError("LR range test produced too few iterations for a stable suggestion.")
+
+    lrs = lrs[skip_start:-skip_end]
+    losses = losses[skip_start:-skip_end]
+    min_loss_idx = int(np.argmin(losses))
+    suggested_lr = float(lrs[min_loss_idx]) / 10.0
+    lr_finder.reset()
+    return suggested_lr
 
 
 class ClassificationTrainer:

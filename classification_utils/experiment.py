@@ -25,7 +25,13 @@ from .datasets import (
     load_generated_metadata,
 )
 from .models import MODEL_REGISTRY
-from .training import ClassificationTrainer, collect_predictions, count_parameters, set_seed
+from .training import (
+    ClassificationTrainer,
+    collect_predictions,
+    count_parameters,
+    find_optimal_lr,
+    set_seed,
+)
 
 
 def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
@@ -59,6 +65,10 @@ class ClassificationConfig:
     learning_rates: dict[str, float] = field(
         default_factory=lambda: {"SimpleCNN": 6.8e-4, "ResNet18": 6.8e-4}
     )
+    use_lr_finder: bool = True
+    lr_finder_start_lr: float = 1e-7
+    lr_finder_end_lr: float = 1e-2
+    lr_finder_num_iter: int = 150
     generated_data_root: Path | None = None
     generated_stage_folder: str = "stage5_pretrained_data"
 
@@ -215,11 +225,26 @@ def run_classification_experiment(config: ClassificationConfig) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for model_name in config.model_names:
         model = MODEL_REGISTRY[model_name](num_classes=15, in_channels=1, padding_mode=config.padding_mode)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rates[model_name], weight_decay=1e-5)
+        criterion = nn.CrossEntropyLoss()
+        if config.use_lr_finder:
+            selected_lr = find_optimal_lr(
+                model=model,
+                train_loader=train_loader,
+                criterion=criterion,
+                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                start_lr=config.lr_finder_start_lr,
+                end_lr=config.lr_finder_end_lr,
+                num_iter=config.lr_finder_num_iter,
+                weight_decay=1e-5,
+            )
+        else:
+            selected_lr = config.learning_rates[model_name]
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=selected_lr, weight_decay=1e-5)
         trainer = ClassificationTrainer(
             model=model,
             optimizer=optimizer,
-            criterion=nn.CrossEntropyLoss(),
+            criterion=criterion,
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
             checkpoint_path=config.results_dir / "checkpoints" / f"{model_name}_best.pt",
         )
@@ -235,6 +260,7 @@ def run_classification_experiment(config: ClassificationConfig) -> pd.DataFrame:
             "test_accuracy": test_acc,
             "duration": duration,
             "num_parameters": count_parameters(trainer.model),
+            "selected_learning_rate": selected_lr,
         }
         rows.append(row)
 

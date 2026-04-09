@@ -172,6 +172,8 @@ Outputs:
 - `baseline_acf`: the controlled comparison using ACF input
 - `gen_aug_resnet`: the best generative-augmentation setting with `ResNet18`
 
+By default, the classification script performs an LR range test with `torch-lr-finder`, in line with the paper-level training workflow. The fixed `learning_rates` entries remain available as fallback values when `use_lr_finder` is set to `False`.
+
 Run:
 
 ```bash

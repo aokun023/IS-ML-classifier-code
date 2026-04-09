@@ -18,3 +18,4 @@ dependencies:
       - diffusers
       - accelerate
       - ema-pytorch
+      - torch-lr-finder
