@@ -19,12 +19,15 @@ if str(REPO_ROOT) not in sys.path:
 from simulation_utils import BeamPropagationSimulation
 
 
-def _format_sigma(value: float) -> str:
-    return f"{value:.0e}".replace("+0", "").replace("+", "")
+def _format_float_tag(value: float) -> str:
+    return f"{value:g}"
 
 
-def _dataset_dirname(z_value: float, sigma_value: float) -> str:
-    return f"dataset_z-{z_value:.2f}_sigma-{_format_sigma(sigma_value)}"
+def _dataset_dirname(z_value: float, sigma_value: float, l0_value: float, nx_value: int) -> str:
+    return (
+        f"dataset_z-{z_value:.2f}_sigma-{_format_float_tag(sigma_value)}"
+        f"_l0-{_format_float_tag(l0_value)}_Nx-{int(nx_value)}"
+    )
 
 
 def _downsample_to_256(image: np.ndarray) -> np.ndarray:
@@ -55,7 +58,7 @@ CONFIG = {
         "Nx": 2048,
         "z": 5.0,
         "dz": 1.0 / 32.0,
-        "sigma": 5.0e-5,
+        "sigma": 1.1,
         "l0": 1.5,
         "w0": 4.0,
         "total_power": 1.0,
@@ -65,7 +68,12 @@ CONFIG = {
 
 def main() -> None:
     sim_params = dict(CONFIG["sim_params"])
-    dataset_dir = REPO_ROOT / "data" / "raw" / _dataset_dirname(sim_params["z"], sim_params["sigma"])
+    dataset_dir = REPO_ROOT / "data" / "raw" / _dataset_dirname(
+        sim_params["z"],
+        sim_params["sigma"],
+        sim_params["l0"],
+        sim_params["Nx"],
+    )
     inputs_2048_dir = dataset_dir / "inputs_2048"
     inputs_256_dir = dataset_dir / "inputs_256"
     inputs_2048_dir.mkdir(parents=True, exist_ok=True)

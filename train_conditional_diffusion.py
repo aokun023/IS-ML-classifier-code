@@ -23,13 +23,13 @@ def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path) -> Path:
 
 
 CONFIG = {
-    "dataset_root": "data/raw/dataset_z-5.00_sigma-5e-05",
+    "dataset_root": "data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048",
     "metadata_filename": "metadata_256.csv",
     "dataset_tag": None,
     "input_resolution_tag": "256",
     "model_type": "Diffusion",
     "prediction_type": "v_prediction",
-    "loss_target_type": "sample",
+    "loss_target_type": "v_prediction",
     "pixel_loss_type": "MSE",
     "lambda_freq": 1.0,
     "image_size": 256,
@@ -40,7 +40,7 @@ CONFIG = {
     "training_samples_per_class": 105,
     "validation_samples_per_class": 45,
     "train_batch_size": 8,
-    "val_batch_size": 24,
+    "val_batch_size": 30,
     "pretrain_epochs": 200,
     "pretrain_lr": 1e-4,
     "pretrain_lr_patience": 10,

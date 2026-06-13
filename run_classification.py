@@ -24,11 +24,11 @@ def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path | None) -
 
 
 BASE_CONFIG = {
-    "real_data_root": "data/raw/dataset_z-5.00_sigma-5e-05",
+    "real_data_root": "data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048",
     "real_metadata_filename": "metadata_256.csv",
     "final_size": (64, 64),
     "canvas_size": (256, 256),
-    "max_real_samples_per_class": 25,
+    "max_real_samples_per_class": 50,
     "max_gen_samples_per_class": 0,
     "use_acf": False,
     "padding_mode": "zeros",
@@ -45,7 +45,7 @@ BASE_CONFIG = {
     "lr_finder_start_lr": 1e-7,
     "lr_finder_end_lr": 1e-2,
     "lr_finder_num_iter": 150,
-    "generated_data_root": "results/generation_z-5.00_sigma-5e-05_pred-v_prediction_loss-sample_lambda-1.0_res-256_seed-42",
+    "generated_data_root": "results/generation_z-5.00_sigma-1.1_l0-1.5_Nx-2048_pred-v_prediction_loss-v_prediction_lambda-1.0_res-256_seed-42",
     "generated_stage_folder": "stage5_pretrained_data",
 }
 
@@ -53,18 +53,57 @@ BASE_CONFIG = {
 PRESETS = {
     "baseline_intensity": {
         "use_acf": False,
+        "max_real_samples_per_class": 50,
         "max_gen_samples_per_class": 0,
         "model_names": ("SimpleCNN", "ResNet18"),
     },
     "baseline_acf": {
         "use_acf": True,
+        "max_real_samples_per_class": 50,
         "max_gen_samples_per_class": 0,
         "model_names": ("SimpleCNN", "ResNet18"),
     },
-    "gen_aug_resnet": {
+    "real25_intensity": {
         "use_acf": False,
+        "max_real_samples_per_class": 25,
+        "max_gen_samples_per_class": 0,
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "real75_intensity": {
+        "use_acf": False,
+        "max_real_samples_per_class": 75,
+        "max_gen_samples_per_class": 0,
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "random_shift_16": {
+        "use_acf": False,
+        "max_real_samples_per_class": 50,
+        "max_gen_samples_per_class": 0,
+        "shift_amount": 16,
+        "shift_mode": "random",
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "random_shift_32": {
+        "use_acf": False,
+        "max_real_samples_per_class": 50,
+        "max_gen_samples_per_class": 0,
+        "shift_amount": 32,
+        "shift_mode": "random",
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "random_shift_48": {
+        "use_acf": False,
+        "max_real_samples_per_class": 50,
+        "max_gen_samples_per_class": 0,
+        "shift_amount": 48,
+        "shift_mode": "random",
+        "model_names": ("SimpleCNN", "ResNet18"),
+    },
+    "gen_aug_vv": {
+        "use_acf": False,
+        "max_real_samples_per_class": 25,
         "max_gen_samples_per_class": 50,
-        "model_names": ("ResNet18",),
+        "model_names": ("SimpleCNN", "ResNet18"),
         "save_confusion_matrices": True,
     },
 }
@@ -76,7 +115,7 @@ PRESET_NAME = "baseline_intensity"
 OVERRIDES = {
     # Example:
     # "random_seed": 100,
-    # "real_data_root": "data/raw/dataset_z-5.00_sigma-1e-04",
+    # "real_data_root": "data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048",
 }
 
 

@@ -33,6 +33,21 @@ def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
     return match.group(1) if match is not None else "unknown"
 
 
+def _dataset_parameter_tag(dataset_name: str) -> str:
+    """Return the compact physical-parameter tag used in output directories."""
+
+    z_value = _extract_dataset_parameter(dataset_name, "z")
+    sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+    l0_value = _extract_dataset_parameter(dataset_name, "l0")
+    nx_value = _extract_dataset_parameter(dataset_name, "Nx")
+    parts = [f"z-{z_value}", f"sigma-{sigma_value}"]
+    if l0_value != "unknown":
+        parts.append(f"l0-{l0_value}")
+    if nx_value != "unknown":
+        parts.append(f"Nx-{nx_value}")
+    return "_".join(parts)
+
+
 @dataclass
 class PipelineConfig:
     """Configuration for conditional diffusion training and sample generation."""
@@ -86,12 +101,10 @@ class PipelineConfig:
     @property
     def output_root(self) -> Path:
         dataset_name = self.dataset_path.name
-        z_value = _extract_dataset_parameter(dataset_name, "z")
-        sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+        dataset_tag = _dataset_parameter_tag(dataset_name)
         base = Path(
             "generation_"
-            f"z-{z_value}_"
-            f"sigma-{sigma_value}_"
+            f"{dataset_tag}_"
             f"pred-{self.prediction_type}_"
             f"loss-{self.loss_target_type}_"
             f"lambda-{self.lambda_freq}_"

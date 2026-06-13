@@ -41,6 +41,21 @@ def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
     return match.group(1) if match is not None else "unknown"
 
 
+def _dataset_parameter_tag(dataset_name: str) -> str:
+    """Return the compact physical-parameter tag used in output directories."""
+
+    z_value = _extract_dataset_parameter(dataset_name, "z")
+    sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+    l0_value = _extract_dataset_parameter(dataset_name, "l0")
+    nx_value = _extract_dataset_parameter(dataset_name, "Nx")
+    parts = [f"z-{z_value}", f"sigma-{sigma_value}"]
+    if l0_value != "unknown":
+        parts.append(f"l0-{l0_value}")
+    if nx_value != "unknown":
+        parts.append(f"Nx-{nx_value}")
+    return "_".join(parts)
+
+
 @dataclass
 class ClassificationConfig:
     """Configuration for one classification study."""
@@ -50,7 +65,7 @@ class ClassificationConfig:
     real_metadata_filename: str = "metadata_256.csv"
     final_size: tuple[int, int] = (64, 64)
     canvas_size: tuple[int, int] = (256, 256)
-    max_real_samples_per_class: int = 25
+    max_real_samples_per_class: int = 50
     max_gen_samples_per_class: int = 0
     use_acf: bool = False
     padding_mode: str = "zeros"
@@ -79,13 +94,11 @@ class ClassificationConfig:
     @property
     def results_dir(self) -> Path:
         dataset_name = self.real_data_root.name
-        z_value = _extract_dataset_parameter(dataset_name, "z")
-        sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+        dataset_tag = _dataset_parameter_tag(dataset_name)
         input_tag = "acf" if self.use_acf else "intensity"
         dirname = (
             "classification_"
-            f"z-{z_value}_"
-            f"sigma-{sigma_value}_"
+            f"{dataset_tag}_"
             f"crop-{self.final_size[0]}x{self.final_size[1]}_"
             f"input-{input_tag}_"
             f"pad-{self.padding_mode}_"

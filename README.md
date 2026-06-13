@@ -1,136 +1,113 @@
 # IS-ML-classifier-code
 
-Code for the IS-ML project on stochastic beam propagation, image-based OAM classification, and diffusion-based generative augmentation.
+Code for the IS-ML study of stochastic structured-light propagation, OAM-source classification, and diffusion-based generative augmentation.
 
-This repository is organized around the three main components studied in the paper:
-- `simulation_utils/`: stochastic beam propagation and dataset generation
-- `classification_utils/`: cropped-intensity and ACF-based classification
-- `generation_utils/`: conditional diffusion training and class-conditional sample generation
+The repository follows the numerical pipeline used in the final manuscript:
 
-The three public entry points are:
+1. simulate propagated intensity fields from a stochastic paraxial propagation model;
+2. train class-conditioned diffusion generators on propagated samples;
+3. train SimpleCNN and ResNet-18 classifiers on real, generated, or mixed real-generated data.
+
+The public entry points are:
+
 - `run_simulation.py`
 - `train_conditional_diffusion.py`
 - `run_classification.py`
 
-## Overview
+All entry scripts use explicit in-script configuration blocks rather than command-line arguments.
 
-The paper studies classification of structured optical fields after propagation through a random medium. The public code follows the same order as the numerical pipeline in the manuscript:
+## Paper Defaults
 
-1. generate propagated datasets by stochastic simulation;
-2. train a conditional diffusion model on propagated samples;
-3. evaluate classification with or without generated-data augmentation.
+The default configuration matches the final manuscript setting unless explicitly overridden:
 
-The default setting in the repository matches the main setting used in the paper:
-- propagation distance `z = 5`
-- medium-strength parameter `sigma = 5e-5`
-- grid size `Nx = 2048`
-- downsampled learning resolution `256 x 256`
-- centered test protocol with crop size `64 x 64`
+- source alphabet: the 15 nonzero binary superpositions of `(p,l) in {(0,1), (1,4), (0,-6), (1,8)}`
+- propagation setting: `z = 5`, `sigma = 1.1`, `l0 = 1.5`
+- grid: `Lx = 64`, `Nx = 2048`, `dz = 1/32`
+- beam waist: `w0 = 4`
+- learning canvas: deterministic average pooling from `2048 x 2048` to `256 x 256`
+- classifier crop: centered `64 x 64` window unless a shift preset is selected
+- classifier split: 50% train, 20% validation, 30% test, stratified by class
+- classifier training: Adam, weight decay `1e-5`, batch size `32`, 500 epochs, best-validation checkpoint
+- reported classifier seeds in the paper: `42`, `100`, and `2023`
+- diffusion model: class-conditioned DDPM U-Net, `v_prediction` default, `v_prediction` loss space, Fourier Bregman frequency weight `lambda = 1`
 
-## Representative Results
+The code parameter name `sigma` corresponds to the manuscript parameter `sigma_0` in the PSD prefactor. With `k0 = 0.5`, the manuscript diffraction factor reduces to the propagation convention used in the solver.
 
-The first figure shows the simulated codebook used in the classification task. The left panel contains the `15` source patterns, and the right panel contains the corresponding propagated intensity patterns under the default random-medium setting.
+## Representative Figures
+
+The dataset overview shows the 15 source classes and representative propagated intensities under the final default setting.
 
 ![Dataset overview](fig/dataset_overview.png)
 
-The next figure compares simulated propagated samples with the outputs of the best conditional diffusion configuration used in the paper (`v`-prediction, sample-space loss, frequency-loss weight `lambda = 1`). The generated codebook reproduces the coarse class structure and the principal speckle statistics of the simulated data.
+The generated comparison shows simulated propagated samples and generated samples under the default diffusion configuration used for the final codebook figure.
 
 ![Generated comparison](fig/generated_comparison.png)
 
-The following spectrum comparison isolates the effect of the spectral Bregman term in the generative loss. The model trained with `lambda = 1` more closely matches the radial power spectrum of the simulated data than the corresponding model with `lambda = 0`.
+The following confusion matrices correspond to the Real-25 + Syn-50, `v_prediction / v_prediction`, `lambda = 1` setting in the final manuscript.
 
-![Bregman spectrum comparison](fig/breg_vs_nobreg_spectrum_panel.png)
+![ResNet-18 v/v confusion matrix](fig/confusion_matrix_vv_resnet.png)
 
-The final figure shows the normalized confusion matrix for the best generative-augmentation result reported in the paper: `ResNet18` with generated samples from the `v/x` setting. Most of the mass remains concentrated on the diagonal, with residual confusion limited to a small number of nearby classes.
-
-![Confusion matrix](fig/confusion_matrix_gen_vx_resnet.png)
+![SimpleCNN v/v confusion matrix](fig/confusion_matrix_vv_simplecnn.png)
 
 ## Repository Structure
 
 ```text
 IS-ML-classifier-code/
-├── classification_utils/
-├── fig/
-├── generation_utils/
+├── classification_utils/       # preprocessing, models, training, experiment runner
+├── generation_utils/           # DDPM datasets, scheduler mappings, losses, pipeline
+├── simulation_utils/           # source-beam construction and split-step propagation
+├── fig/                        # lightweight README figures
+├── run_simulation.py           # generate propagated datasets
+├── train_conditional_diffusion.py
 ├── run_classification.py
-├── run_simulation.py
-├── simulation_utils/
-└── train_conditional_diffusion.py
+├── environment.yml
+└── README.md
 ```
 
-The repository is intentionally kept flat. The reusable modules are exposed directly at the repository root, and the main executable scripts are placed alongside them.
+Large datasets, checkpoints, generated samples, and processed outputs are intentionally excluded from git.
 
 ## Environment
 
-Recommended Python version:
-- `3.10` or `3.11`
-
-An environment file is provided at the repository root:
+Recommended Python version: `3.10` or `3.11`.
 
 ```bash
 conda env create -f environment.yml
 conda activate isml
 ```
 
+The diffusion pipeline uses `accelerate`, `diffusers`, and `ema-pytorch`. The classifier LR range test uses `torch-lr-finder`; set `use_lr_finder = False` in `run_classification.py` to use the fallback learning rates.
+
 ## Data Layout
 
-The main scripts create their output directories automatically. When the pipeline is run, the following directory convention is used:
-- `data/raw/` stores simulated datasets
-- `data/processed/` stores classification outputs
-- `results/` stores diffusion checkpoints and generated samples created during training
-- `fig/` stores lightweight figures used in the repository documentation
+Runtime data are expected under the following repository-relative layout:
 
-Under the default configuration:
-- `run_simulation.py` writes a dataset to `data/raw/dataset_z-5.00_sigma-5e-05/`
-- `train_conditional_diffusion.py` reads from `data/raw/` and writes to `results/generation_.../`
-- `run_classification.py` reads from `data/raw/` and writes to `data/processed/classification_.../`
+```text
+data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048/
+├── inputs_2048/
+├── inputs_256/
+├── metadata_2048.csv
+├── metadata_256.csv
+├── metadata.csv
+└── summary.json
+```
 
-These runtime outputs are not part of the repository contents and are excluded from git by default.
+The scripts create output directories automatically:
 
-## Modules
+- `data/raw/` stores propagated simulation datasets.
+- `results/` stores diffusion checkpoints and generated samples.
+- `data/processed/` stores classification summaries, histories, checkpoints, and optional confusion matrices.
 
-### Simulation
+The final-manuscript data are too large for git. To reproduce the paper-level runs, either place the current database at the path above or regenerate it with `run_simulation.py`.
 
-The simulation module is built around:
-- `simulation_utils/beam_creation.py`
-- `simulation_utils/beam_propagation.py`
-- `simulation_utils/simulation_class.py`
-
-It generates class-conditional propagated intensity fields and exports both `2048 x 2048` and `256 x 256` arrays together with metadata tables.
-
-### Generation
-
-The generation module is built around:
-- `generation_utils/datasets.py`
-- `generation_utils/losses.py`
-- `generation_utils/diffusion.py`
-- `generation_utils/pipeline.py`
-
-It covers conditional diffusion training and export of class-conditional synthetic samples for augmentation.
-
-### Classification
-
-The classification module is built around:
-- `classification_utils/models.py`
-- `classification_utils/datasets.py`
-- `classification_utils/training.py`
-- `classification_utils/experiment.py`
-
-It covers cropped-intensity and ACF inputs, the controlled crop-and-shift protocol, and the `SimpleCNN` / `ResNet18` classifiers used in the paper.
-
-## Usage
-
-### 1. Generate a default dataset
+## 1. Generate the Propagated Dataset
 
 `run_simulation.py` generates the default propagated-intensity dataset:
-- `15` nonzero binary classes from the default mode dictionary
-- `150` samples per class
-- `Lx = 64`
-- `Nx = 2048`
-- `z = 5`
-- `dz = 1/32`
-- `sigma = 5e-5`
-- `l0 = 1.5`
+
+- 15 nonzero binary OAM-source classes
+- 150 propagated samples per class
+- `2048 x 2048` raw intensities
+- `256 x 256` average-pooled intensities
+- metadata files for both resolutions
 
 Run:
 
@@ -138,21 +115,25 @@ Run:
 python run_simulation.py
 ```
 
-Outputs:
-- `data/raw/dataset_z-5.00_sigma-5e-05/inputs_2048/*.npy`
-- `data/raw/dataset_z-5.00_sigma-5e-05/inputs_256/*.npy`
-- `data/raw/dataset_z-5.00_sigma-5e-05/metadata_2048.csv`
-- `data/raw/dataset_z-5.00_sigma-5e-05/metadata_256.csv`
-- `data/raw/dataset_z-5.00_sigma-5e-05/summary.json`
+Default output:
 
-### 2. Train the conditional diffusion model
+```text
+data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048/
+```
 
-`train_conditional_diffusion.py` runs the default generation pipeline:
+## 2. Train the Conditional Diffusion Generator
+
+`train_conditional_diffusion.py` implements the paper-level conditional DDPM protocol:
+
 - input resolution `256 x 256`
-- `v`-prediction
-- sample-space loss
-- frequency-loss weight `lambda = 1`
-- `50` generated samples per class
+- min-max normalization to `[-1, 1]`
+- prediction target `v_prediction`
+- loss space `v_prediction`
+- pixel MSE plus Fourier-domain Bregman regularizer
+- default frequency-loss weight `lambda = 1`
+- 70/30 train/validation split
+- AdamW, learning rate `1e-4`, 200 epochs
+- 50 generated samples per class
 
 Run:
 
@@ -160,19 +141,32 @@ Run:
 python train_conditional_diffusion.py
 ```
 
-Outputs:
-- best pretrained checkpoint
-- training summaries
-- generated samples in `results/generation_.../class-*/stage5_pretrained_data/`
+Default output:
 
-### 3. Run the baseline classification experiment
+```text
+results/generation_z-5.00_sigma-1.1_l0-1.5_Nx-2048_pred-v_prediction_loss-v_prediction_lambda-1.0_res-256_seed-42/
+```
 
-`run_classification.py` is organized around a small set of paper-level presets. The current presets are:
-- `baseline_intensity`: the main baseline with cropped intensity input
-- `baseline_acf`: the controlled comparison using ACF input
-- `gen_aug_resnet`: the best generative-augmentation setting with `ResNet18`
+Generated samples are written under per-class folders such as:
 
-By default, the classification script performs an LR range test with `torch-lr-finder`, in line with the paper-level training workflow. The fixed `learning_rates` entries remain available as fallback values when `use_lr_finder` is set to `False`.
+```text
+class-1/stage5_pretrained_data/generated_class-1_sample-0000.npy
+```
+
+## 3. Run Classification Experiments
+
+`run_classification.py` contains presets corresponding to the classifier studies in the manuscript. Select a preset by editing `PRESET_NAME` near the top of the file.
+
+Available presets:
+
+- `baseline_intensity`: Real-50, cropped intensity input, SimpleCNN and ResNet-18.
+- `baseline_acf`: Real-50, ACF input, SimpleCNN and ResNet-18.
+- `real25_intensity`: Real-25 training-size setting.
+- `real75_intensity`: Real-75 training-size setting.
+- `random_shift_16`: random-shift training with `S = 16`, centered testing.
+- `random_shift_32`: random-shift training with `S = 32`, centered testing.
+- `random_shift_48`: random-shift training with `S = 48`, centered testing.
+- `gen_aug_vv`: Real-25 + Syn-50 using the default `v_prediction / v_prediction`, `lambda = 1` generator.
 
 Run:
 
@@ -180,12 +174,23 @@ Run:
 python run_classification.py
 ```
 
-Outputs:
-- `data/processed/classification_.../summary.csv`
-- training histories
-- checkpoints
-- optional confusion matrices
+Default output is written to a directory of the form:
 
-To switch experiments, change `PRESET_NAME` near the top of `run_classification.py`. Small local changes can then be made through the `OVERRIDES` dictionary in the same file.
+```text
+data/processed/classification_z-5.00_sigma-1.1_l0-1.5_Nx-2048_crop-64x64_input-intensity_pad-zeros_shift-0-fixed_eval-center_test_seed-42/
+```
 
-All three entry scripts use explicit in-script configuration blocks. To change the physical setting, dataset size, classifier, or generative model, edit the corresponding preset or configuration block.
+Each run writes `summary.csv`, per-model training histories, checkpoints, and optional confusion matrices.
+
+## Notes on Reproducing Tables
+
+The paper reports means and standard deviations over seeds `42`, `100`, and `2023`. To reproduce a table entry, run the corresponding preset once per seed by setting `OVERRIDES = {"random_seed": <seed>}` in `run_classification.py`, then aggregate the resulting `summary.csv` files.
+
+For generator-comparison rows, train or provide generated samples for the desired pair of `prediction_type` and `loss_target_type`, then update `generated_data_root` in `run_classification.py`. The manuscript uses the following generated configurations:
+
+- `sample / v_prediction` for `x`-pred / `v`-loss;
+- `v_prediction / sample` for `v`-pred / `x`-loss;
+- `v_prediction / v_prediction` for `v`-pred / `v`-loss;
+- `v_prediction / epsilon` for `v`-pred / epsilon-loss.
+
+The default public preset is `v_prediction / v_prediction`, because it is the default-`lambda` configuration emphasized in the final manuscript.
