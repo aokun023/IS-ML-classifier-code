@@ -33,21 +33,6 @@ def _extract_dataset_parameter(dataset_name: str, key: str) -> str:
     return match.group(1) if match is not None else "unknown"
 
 
-def _dataset_parameter_tag(dataset_name: str) -> str:
-    """Return the compact physical-parameter tag used in output directories."""
-
-    z_value = _extract_dataset_parameter(dataset_name, "z")
-    sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
-    l0_value = _extract_dataset_parameter(dataset_name, "l0")
-    nx_value = _extract_dataset_parameter(dataset_name, "Nx")
-    parts = [f"z-{z_value}", f"sigma-{sigma_value}"]
-    if l0_value != "unknown":
-        parts.append(f"l0-{l0_value}")
-    if nx_value != "unknown":
-        parts.append(f"Nx-{nx_value}")
-    return "_".join(parts)
-
-
 @dataclass
 class PipelineConfig:
     """Configuration for conditional diffusion training and sample generation."""
@@ -80,6 +65,8 @@ class PipelineConfig:
     append_generated_samples: bool
     class_ids: list[int]
     model_config: dict
+    p_uncond: float
+    guidance_strength: float
 
     def __post_init__(self) -> None:
         self.metadata_csv = self.dataset_path / self.metadata_filename
@@ -101,15 +88,21 @@ class PipelineConfig:
     @property
     def output_root(self) -> Path:
         dataset_name = self.dataset_path.name
-        dataset_tag = _dataset_parameter_tag(dataset_name)
+        z_value = _extract_dataset_parameter(dataset_name, "z")
+        sigma_value = _extract_dataset_parameter(dataset_name, "sigma")
+
         base = Path(
-            "generation_"
-            f"{dataset_tag}_"
-            f"pred-{self.prediction_type}_"
-            f"loss-{self.loss_target_type}_"
-            f"lambda-{self.lambda_freq}_"
-            f"res-{self.image_size}_"
-            f"seed-{self.random_seed}"
+          "generation_"
+          f"z-{z_value}_"
+          f"sigma-{sigma_value}_"
+          f"pred-{self.prediction_type}_"
+          f"loss-{self.loss_target_type}_"
+          f"lambda-{self.lambda_freq}_"
+          f"res-{self.image_size}_"
+          f"classes-{self.num_class_embed}_"
+          f"puncond-{self.p_uncond}_"
+          f"cfgw-{self.guidance_strength}_"
+          f"seed-{self.random_seed}"
         )
         return self.repo_root / "results" / base
 
@@ -147,8 +140,8 @@ def pretrain_generator(config: PipelineConfig, accelerator: Accelerator) -> Path
         samples_per_class=config.validation_samples_per_class,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=config.train_batch_size, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=config.val_batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=config.train_batch_size, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=config.val_batch_size, shuffle=False, num_workers=0)
 
     model = build_unet(config.model_config, config.num_class_embed)
     noise_scheduler = build_noise_scheduler(config.model_type, config.prediction_type)
@@ -175,7 +168,14 @@ def pretrain_generator(config: PipelineConfig, accelerator: Accelerator) -> Path
     for _ in range(config.pretrain_epochs):
         model.train()
         for clean_images, labels in tqdm(train_loader, disable=not accelerator.is_local_main_process, leave=False):
+          
             labels = labels.to(accelerator.device)
+            labels_cfg = labels.clone()
+            if config.guidance_strength != 0:
+              null_id = config.num_class_embed - 1
+              drop_mask = torch.rand(labels.shape, device=labels.device) < config.p_uncond
+              labels_cfg[drop_mask] = null_id
+
             with accelerator.accumulate(model):
                 noise = torch.randn_like(clean_images)
                 timesteps = torch.randint(
@@ -191,7 +191,7 @@ def pretrain_generator(config: PipelineConfig, accelerator: Accelerator) -> Path
                 else:
                     noisy_images = noise_scheduler.add_noise(clean_images, noise, timesteps)
 
-                model_output = model(noisy_images, timesteps, class_labels=labels).sample
+                model_output = model(noisy_images, timesteps, class_labels=labels_cfg).sample
                 preds, targets = get_diffusion_variables(
                     model_output,
                     noisy_images,
@@ -321,7 +321,17 @@ def generate_samples_for_class(class_label: int, config: PipelineConfig, model_p
             latent_input = noise_scheduler.scale_model_input(latents, t) if hasattr(noise_scheduler, "scale_model_input") else latents
             t_tensor = t if torch.is_tensor(t) else torch.tensor([t], device=config.device)
             with torch.no_grad():
-                model_output = model(latent_input, t_tensor, class_labels=labels).sample
+                if config.guidance_strength == 0:
+                  model_output = model(latent_input, t_tensor, class_labels=labels).sample
+                else:
+                  null_id = config.num_class_embed - 1
+                  labels_u = torch.full_like(labels, null_id)
+
+                  model_output_c = model(latent_input, t_tensor, class_labels=labels).sample
+                  model_output_u = model(latent_input, t_tensor, class_labels=labels_u).sample
+
+                  model_output = (1.0 + config.guidance_strength) * model_output_c - config.guidance_strength * model_output_u
+                  
                 if isinstance(noise_scheduler, FlowMatchEulerDiscreteScheduler) and config.prediction_type == "sample":
                     sigma = t_tensor / noise_scheduler.config.num_train_timesteps
                     model_output = (latents - model_output) / (sigma + 1e-5)
