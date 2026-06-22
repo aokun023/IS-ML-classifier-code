@@ -45,7 +45,7 @@ BASE_CONFIG = {
     "lr_finder_start_lr": 1e-7,
     "lr_finder_end_lr": 1e-2,
     "lr_finder_num_iter": 150,
-    "generated_data_root": "results/generation_z-5.00_sigma-1.1_l0-1.5_Nx-2048_pred-v_prediction_loss-v_prediction_lambda-1.0_res-256_seed-42",
+    "generated_data_root": "results/generation_z-5.00_sigma-1.1_pred-v_prediction_loss-sample_lambda-1.0_res-256_classes-16_puncond-0.1_cfgw-1.0_seed-42",
     "generated_stage_folder": "stage5_pretrained_data",
 }
 

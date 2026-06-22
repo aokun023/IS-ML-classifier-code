@@ -23,7 +23,7 @@ def _resolve_repo_relative_path(repo_root: Path, path_like: str | Path) -> Path:
 
 
 CONFIG = {
-    "dataset_root": "data/raw/dataset_z-5.00_sigma-5e-05",
+    "dataset_root": "data/raw/dataset_z-5.00_sigma-1.1_l0-1.5_Nx-2048",
     "metadata_filename": "metadata_256.csv",
     "dataset_tag": None,
     "input_resolution_tag": "256",
