@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Reproduce the historical propagated-intensity data-generation procedure.
+"""Generate propagated-intensity data using the manuscript grid setting.
 
 Warning:
     This script intentionally preserves the legacy multiprocessing behavior.
     On systems that start workers with ``fork``, workers inherit the same
     NumPy random state, so the generated files are not guaranteed to be
     independent turbulence realizations. Use this script only to reproduce
-    the historical experiment, not to generate a new statistically
+    the legacy multiprocessing experiment, not to generate a statistically
     independent dataset.
 """
 
@@ -91,7 +91,7 @@ CONFIG = {
         "Lx": 64.0,
         "Nx": 2048,
         "z": 5.0,
-        "Nz": 81,
+        "dz": 1.0 / 32.0,
         "sigma": 1.1,
         "l0": 1.5,
         "w0": 4.0,

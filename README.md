@@ -22,7 +22,7 @@ The default configuration matches the final manuscript setting unless explicitly
 
 - source alphabet: the 15 nonzero binary superpositions of `(p,l) in {(0,1), (1,4), (0,-6), (1,8)}`
 - propagation setting: `z = 5`, `sigma = 1.1`, `l0 = 1.5`
-- grid: `Lx = 64`, `Nx = 2048`, `Nz = 81`, `dz = 1/16`
+- grid: `Lx = 64`, `Nx = 2048`, `dz = 1/32`
 - beam waist: `w0 = 4`
 - source total power: `total_power = 1e5`
 - learning canvas: deterministic average pooling from `2048 x 2048` to `256 x 256`
