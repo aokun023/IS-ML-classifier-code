@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
-"""Generate one propagated-intensity dataset for simulation, generation, and classification."""
+"""Reproduce the historical propagated-intensity data-generation procedure.
+
+Warning:
+    This script intentionally preserves the legacy multiprocessing behavior.
+    On systems that start workers with ``fork``, workers inherit the same
+    NumPy random state, so the generated files are not guaranteed to be
+    independent turbulence realizations. Use this script only to reproduce
+    the historical experiment, not to generate a new statistically
+    independent dataset.
+"""
 
 from __future__ import annotations
 
 import csv
 import json
 import sys
+from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
@@ -49,19 +59,43 @@ def _downsample_to_256(image: np.ndarray) -> np.ndarray:
     return reshaped.mean(axis=(1, 3), dtype=np.float32)
 
 
+def _generate_sample(task: dict) -> tuple[str, str, int]:
+    """Generate one sample using the worker's inherited random state."""
+
+    simulation = BeamPropagationSimulation(
+        {
+            "basis_modes": task["basis_modes"],
+            "code": task["code"],
+            "sim_params": task["sim_params"],
+        }
+    )
+    simulation.run()
+    _, final_intensity = simulation.get_results()
+    final_small = _downsample_to_256(final_intensity)
+
+    np.save(task["output_2048"], final_intensity.astype(np.float32))
+    np.save(task["output_256"], final_small.astype(np.float32))
+    return (
+        task["relative_2048"],
+        task["relative_256"],
+        task["class_label"],
+    )
+
+
 CONFIG = {
     "basis_modes": [(0, 1), (1, 4), (0, -6), (1, 8)],
     "samples_per_class": 150,
+    "num_processes": 4,
     "skip_existing": True,
     "sim_params": {
         "Lx": 64.0,
         "Nx": 2048,
         "z": 5.0,
-        "dz": 1.0 / 32.0,
+        "Nz": 81,
         "sigma": 1.1,
         "l0": 1.5,
         "w0": 4.0,
-        "total_power": 1.0,
+        "total_power": 1.0e5,
     },
 }
 
@@ -81,39 +115,51 @@ def main() -> None:
 
     rows_2048: list[tuple[str, int]] = []
     rows_256: list[tuple[str, int]] = []
+    tasks: list[dict] = []
     num_basis = len(CONFIG["basis_modes"])
     num_classes = 2**num_basis - 1
     total_jobs = num_classes * int(CONFIG["samples_per_class"])
 
-    with tqdm(total=total_jobs, desc="Generating dataset") as progress:
-        for class_label in range(1, num_classes + 1):
-            code = format(class_label, f"0{num_basis}b")
-            for sample_idx in range(int(CONFIG["samples_per_class"])):
-                filename = f"symbol_{code}_label_{class_label}_sample_{sample_idx:04d}.npy"
-                output_2048 = inputs_2048_dir / filename
-                output_256 = inputs_256_dir / filename
-                relative_2048 = f"inputs_2048/{filename}"
-                relative_256 = f"inputs_256/{filename}"
+    for class_label in range(1, num_classes + 1):
+        code = format(class_label, f"0{num_basis}b")
+        for sample_idx in range(int(CONFIG["samples_per_class"])):
+            filename = f"symbol_{code}_label_{class_label}_sample_{sample_idx:04d}.npy"
+            output_2048 = inputs_2048_dir / filename
+            output_256 = inputs_256_dir / filename
+            relative_2048 = f"inputs_2048/{filename}"
+            relative_256 = f"inputs_256/{filename}"
 
-                if CONFIG["skip_existing"] and output_2048.exists() and output_256.exists():
-                    rows_2048.append((relative_2048, class_label))
-                    rows_256.append((relative_256, class_label))
-                    progress.update(1)
-                    continue
+            if CONFIG["skip_existing"] and output_2048.exists() and output_256.exists():
+                rows_2048.append((relative_2048, class_label))
+                rows_256.append((relative_256, class_label))
+                continue
 
-                simulation = BeamPropagationSimulation(
-                    {
-                        "basis_modes": CONFIG["basis_modes"],
-                        "code": code,
-                        "sim_params": sim_params,
-                    }
-                )
-                simulation.run()
-                _, final_intensity = simulation.get_results()
-                final_small = _downsample_to_256(final_intensity)
+            tasks.append(
+                {
+                    "basis_modes": CONFIG["basis_modes"],
+                    "code": code,
+                    "sim_params": sim_params,
+                    "class_label": class_label,
+                    "output_2048": output_2048,
+                    "output_256": output_256,
+                    "relative_2048": relative_2048,
+                    "relative_256": relative_256,
+                }
+            )
 
-                np.save(output_2048, final_intensity.astype(np.float32))
-                np.save(output_256, final_small.astype(np.float32))
+    with tqdm(
+        total=total_jobs,
+        initial=total_jobs - len(tasks),
+        desc="Generating dataset",
+    ) as progress:
+        print(
+            "WARNING: legacy reproduction mode preserves inherited worker RNG "
+            "state; turbulence realizations may be duplicated."
+        )
+        with Pool(processes=int(CONFIG["num_processes"])) as pool:
+            for relative_2048, relative_256, class_label in pool.imap_unordered(
+                _generate_sample, tasks
+            ):
                 rows_2048.append((relative_2048, class_label))
                 rows_256.append((relative_256, class_label))
                 progress.update(1)
@@ -134,6 +180,7 @@ def main() -> None:
         "dataset_dir": dataset_dir.name,
         "basis_modes": list(CONFIG["basis_modes"]),
         "samples_per_class": int(CONFIG["samples_per_class"]),
+        "num_processes": int(CONFIG["num_processes"]),
         "num_classes": num_classes,
         "sim_params": sim_params,
         "num_samples_2048": len(rows_2048),
